@@ -1,4 +1,4 @@
-// Koala, Panda, Iguana
+// Koala, Panda, Iguana2
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -114,7 +114,7 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves between logo and video with extra side padding */
+      /* Text container moves next with extra side padding */
       #text-container {
         position: static;
         width: calc(100% - 40px); /* 20px margin on each side */
@@ -122,7 +122,7 @@
         margin: 10px;
         color: #000; /* Mobile: black text */
         padding: 20px;
-        text-align: center;
+        text-align: center; /* Center align heading & tagline */
         background-color: transparent; /* Use body’s dynamic background */
       }
     }
@@ -185,7 +185,7 @@
 
       // Use a small canvas for performance
       const sampleWidth = 160;
-      const fullSampleHeight = 90; // draw full frame for consistency
+      const fullSampleHeight = 90; // height used for drawing the full frame
       const rowsToSample = 5; // only sample the top 5 rows
 
       canvas.width = sampleWidth;
@@ -223,9 +223,10 @@
           textContainer.style.transition = 'background-color 0.5s ease';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'transparent';
-          // Update the video overlay gradient to blend over 100px.
+          // Update the video overlay gradient to blend the dynamic color with transparency more gradually.
           videoOverlay.style.transition = 'background-image 0.5s ease';
-          videoOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, transparent 100%)`;
+          // Use multiple stops to smooth the gradient transition.
+          videoOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, ${avgColor} 60%, transparent 100%)`;
         } else {
           // On desktop: use original static backgrounds.
           document.body.style.backgroundColor = '#000';
