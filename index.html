@@ -34,8 +34,7 @@
       left: 5%;
       width: 480px;
       z-index: 1;
-      /* Desktop static background: transparent */
-      background-color: transparent;
+      background-color: transparent; /* Desktop: transparent */
     }
     /* Logo image */
     #logo {
@@ -50,18 +49,20 @@
       bottom: 5%;
       width: 300px;
       z-index: 2;
-      /* Desktop text color white */
-      color: #fff;
+      color: #fff; /* Desktop: white text */
       padding: 15px;
       border-radius: 5px;
       font-family: sans-serif;
       line-height: 1.4;
-      /* Desktop static background as in the original version */
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.5); /* Desktop static background */
     }
     #text-container h2,
     #text-container p {
       margin: 0 0 10px 0;
+    }
+    /* Transition overlay is hidden on desktop */
+    #transition-overlay {
+      display: none;
     }
 
     /* ---------- MOBILE and TABLET adjustments (max-width: 1024px) ---------- */
@@ -70,13 +71,13 @@
         overflow: auto;
         height: auto;
       }
-      /* On mobile, the body background will be dynamically updated */
+      /* Use flexbox to order elements */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
       }
-      /* Video becomes part of the normal document flow */
+      /* Video becomes part of the document flow (at the bottom) */
       #background-video {
         position: static;
         transform: none;
@@ -85,7 +86,7 @@
         min-width: 0;
         min-height: 0;
         object-fit: contain;
-        order: 3;
+        order: 4;
         z-index: auto;
       }
       /* Logo container moves to the top */
@@ -96,20 +97,24 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves between logo and video with extra side padding */
+      /* Text container moves next with extra side padding */
       #text-container {
         position: static;
-        width: calc(100% - 40px); /* Increased side padding: 20px each side */
+        width: calc(100% - 40px); /* 20px margin on left and right */
         order: 2;
         margin: 10px;
-        /* Mobile text color black */
-        color: #000;
-        /* Increase padding for extra space from left/right */
+        color: #000; /* Mobile: black text */
         padding: 20px;
-        /* Center align text */
-        text-align: center;
-        /* For mobile, containers are transparent so the dynamic background shows */
-        background-color: transparent;
+        text-align: center; /* Center-align heading & tagline */
+        background-color: transparent; /* Use body’s dynamic background */
+      }
+      /* Transition overlay placed between text and video */
+      #transition-overlay {
+        display: block;
+        order: 3;
+        width: calc(100% - 40px);
+        margin: 0 20px;
+        height: 100px;
       }
     }
   </style>
@@ -150,6 +155,9 @@
     <p><strong>Optimize. Automate. Illuminate.</strong></p>
   </div>
 
+  <!-- Transition Overlay (mobile only) -->
+  <div id="transition-overlay"></div>
+
   <!-- Hidden canvas for sampling video frames -->
   <canvas id="video-canvas" style="display: none;"></canvas>
 
@@ -159,20 +167,20 @@
     const ctx = canvas.getContext('2d');
     const logoContainer = document.getElementById('logo-container');
     const textContainer = document.getElementById('text-container');
+    const transitionOverlay = document.getElementById('transition-overlay');
 
     function updateColor() {
       if (video.paused || video.ended) return;
 
       // Use a small canvas for performance
       const sampleWidth = 160;
-      const fullSampleHeight = 90; // Full canvas height (for drawing)
-      const rowsToSample = 5; // Only sample the top 5 rows
+      const fullSampleHeight = 90; // height to draw full frame (for consistency)
+      const rowsToSample = 5; // sample only top 5 rows
 
       canvas.width = sampleWidth;
       canvas.height = fullSampleHeight;
 
       try {
-        // Draw the full frame onto the canvas
         ctx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
       } catch (error) {
         console.error("Error drawing video frame:", error);
@@ -180,13 +188,11 @@
       }
 
       try {
-        // Get image data from the top 5 rows only
+        // Get image data for only the top 5 rows
         const frame = ctx.getImageData(0, 0, sampleWidth, rowsToSample);
         const data = frame.data;
         let r = 0, g = 0, b = 0;
         const count = data.length / 4;
-
-        // Sum up the color values for these pixels
         for (let i = 0; i < data.length; i += 4) {
           r += data[i];
           g += data[i + 1];
@@ -198,16 +204,20 @@
         const avgColor = `rgb(${r}, ${g}, ${b})`;
 
         if (window.innerWidth <= 1024) {
-          // On mobile, update the body background with the dynamic color.
+          // On mobile: update the body background with the dynamic color.
           document.body.style.transition = 'background-color 0.5s ease';
           document.body.style.backgroundColor = avgColor;
-          // Keep the containers transparent.
+          // Ensure logo and text containers remain transparent.
           logoContainer.style.transition = 'background-color 0.5s ease';
           textContainer.style.transition = 'background-color 0.5s ease';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'transparent';
+          // Update the gradient for the transition overlay.
+          transitionOverlay.style.transition = 'background-image 0.5s ease';
+          // Create a gradient from the avgColor to transparent over the 100px height.
+          transitionOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, transparent 100%)`;
         } else {
-          // On desktop, use the original static backgrounds.
+          // On desktop: use original static backgrounds.
           document.body.style.backgroundColor = '#000';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
