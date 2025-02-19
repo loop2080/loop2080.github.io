@@ -12,6 +12,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden; /* Prevent scrolling on desktop */
+      background-color: #000; /* fallback */
     }
 
     /* Full-screen video for desktop */
@@ -35,7 +36,7 @@
       left: 5%;
       width: 480px;
       z-index: 1;
-      /* The background-color will be updated dynamically */
+      /* Background will be updated dynamically */
     }
 
     /* Logo image styling */
@@ -51,13 +52,13 @@
       right: 5%;
       bottom: 5%;
       width: 300px;
-      /* The background-color will be updated dynamically */
+      z-index: 2;
       color: #fff;
       padding: 15px;
       border-radius: 5px;
-      z-index: 2;
       font-family: sans-serif;
       line-height: 1.4;
+      /* Background will be updated dynamically */
     }
     #text-container h2,
     #text-container p {
@@ -66,19 +67,17 @@
 
     /* Mobile and tablet layout adjustments */
     @media (max-width: 1024px) {
-      /* Allow scrolling if needed */
       html, body {
         overflow: auto;
         height: auto;
       }
-
-      /* Use flexbox to reorder the elements */
+      /* On mobile, we want the entire background behind the content to change */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
+        background-color: transparent; /* will be updated dynamically */
       }
-
       /* Video becomes part of the content flow and appears last */
       #background-video {
         position: static;
@@ -91,32 +90,37 @@
         order: 3;
         z-index: auto;
       }
-
-      /* Logo container: remains at the top */
+      /* Logo container: remains at the top and spans full width */
       #logo-container {
         position: static;
-        width: 80%;
+        width: 100%;
         max-width: 480px;
         order: 1;
-        margin: 10px auto;
+        margin: 0;
+        background: transparent;
       }
-
       /* Text container: appears between the logo and video */
       #text-container {
         position: static;
-        width: 90%;
+        width: 100%;
         order: 2;
-        margin: 10px auto;
-        /* Fallback background */
-        background: rgba(0, 0, 0, 0.7);
+        margin: 0;
+        background: transparent;
       }
     }
   </style>
 </head>
 <body>
   <!-- Video Background with crossOrigin attribute (if needed) -->
-  <video autoplay loop muted playsinline id="background-video" crossOrigin="anonymous">
-    <source src="spider1.mp4" type="video/mp4">
+  <video
+    id="background-video"
+    autoplay
+    loop
+    muted
+    playsinline
+    crossOrigin="anonymous"
+  >
+    <source src="spider1.mp4" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
 
@@ -126,9 +130,11 @@
     <img src="fixbot logo svg.svg" alt="Fixbot Logo" id="logo" />
   </div>
 
-  <!-- Text Container -->
+  <!-- Text Container (for dynamic background) -->
   <div id="text-container">
-    <h2><strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong></h2>
+    <h2>
+      <strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong>
+    </h2>
     <p>
       <strong>Fixbot</strong> is transforming the way lighting pole maintenance companies operate.
       Using <strong>cutting-edge AI</strong> and <strong>advanced robotics</strong>, we help businesses
@@ -141,67 +147,68 @@
     <p><strong>Optimize. Automate. Illuminate.</strong></p>
   </div>
 
-  <!-- Hidden canvas for extracting video frame data -->
+  <!-- Hidden canvas for sampling video frames -->
   <canvas id="video-canvas" style="display: none;"></canvas>
 
   <script>
-    // Get references to elements
     const video = document.getElementById('background-video');
     const canvas = document.getElementById('video-canvas');
     const ctx = canvas.getContext('2d');
     const logoContainer = document.getElementById('logo-container');
     const textContainer = document.getElementById('text-container');
 
-    function updateAverageColor() {
-      if (video.readyState >= 2) { // Ensure video data is available
-        // Use a small canvas for performance
-        const canvasWidth = 160;
-        const canvasHeight = 90;
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+    // Update the average color from the current video frame
+    function updateColor() {
+      if (video.paused || video.ended) return;
 
-        try {
-          // Draw the current video frame onto the canvas
-          ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-        } catch (error) {
-          console.error("Error drawing video frame:", error);
-          return;
-        }
+      const sampleWidth = 160;
+      const sampleHeight = 90;
+      canvas.width = sampleWidth;
+      canvas.height = sampleHeight;
 
-        try {
-          // Get the pixel data from the canvas
-          const frame = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-          const data = frame.data;
-          let r = 0, g = 0, b = 0;
-          const pixelCount = data.length / 4;
-
-          // Sum up all the red, green, and blue values
-          for (let i = 0; i < data.length; i += 4) {
-            r += data[i];
-            g += data[i + 1];
-            b += data[i + 2];
-          }
-
-          // Calculate average color values
-          r = Math.round(r / pixelCount);
-          g = Math.round(g / pixelCount);
-          b = Math.round(b / pixelCount);
-          const avgColor = `rgb(${r}, ${g}, ${b})`;
-
-          // Apply smooth transitions and update the backgrounds
-          logoContainer.style.transition = 'background-color 0.5s ease';
-          textContainer.style.transition = 'background-color 0.5s ease';
-          logoContainer.style.backgroundColor = avgColor;
-          textContainer.style.backgroundColor = avgColor;
-        } catch (error) {
-          console.error("Error retrieving image data:", error);
-        }
+      try {
+        ctx.drawImage(video, 0, 0, sampleWidth, sampleHeight);
+      } catch (error) {
+        console.error("Error drawing video frame:", error);
+        return;
       }
+
+      try {
+        const frame = ctx.getImageData(0, 0, sampleWidth, sampleHeight);
+        const data = frame.data;
+        let r = 0, g = 0, b = 0;
+        const count = data.length / 4;
+
+        for (let i = 0; i < data.length; i += 4) {
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+        }
+
+        r = Math.floor(r / count);
+        g = Math.floor(g / count);
+        b = Math.floor(b / count);
+        const avgColor = `rgb(${r}, ${g}, ${b})`;
+
+        // Update the background of the logo and text containers
+        logoContainer.style.transition = 'background-color 0.5s ease';
+        textContainer.style.transition = 'background-color 0.5s ease';
+        logoContainer.style.backgroundColor = avgColor;
+        textContainer.style.backgroundColor = avgColor;
+
+        // On mobile/tablet, also update the body background so no white gaps appear.
+        if (window.innerWidth <= 1024) {
+          document.body.style.transition = 'background-color 0.5s ease';
+          document.body.style.backgroundColor = avgColor;
+        }
+      } catch (error) {
+        console.error("Error processing image data:", error);
+      }
+      requestAnimationFrame(updateColor);
     }
 
-    // Start updating the background color when the video can play
-    video.addEventListener('canplay', function() {
-      setInterval(updateAverageColor, 500);
+    video.addEventListener('play', () => {
+      requestAnimationFrame(updateColor);
     });
   </script>
 </body>
