@@ -1,10 +1,10 @@
-// Koala, Panda, Iguana
 <!DOCTYPE html>
+<!-- revert due to failure  -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Responsive Video Layout without Transition Overlay</title>
+  <title>Responsive Video Layout with Dynamic Background</title>
   <style>
     /* ---------- DESKTOP (Full-screen video background) ---------- */
     html, body {
@@ -28,37 +28,42 @@
       object-fit: cover;
       z-index: 0;
     }
-    /* Logo container */
+    /* Logo container at top-left */
     #logo-container {
       position: absolute;
       top: 0;
       left: 5%;
       width: 480px;
       z-index: 1;
-      background-color: transparent;
+      background-color: transparent; /* Desktop: transparent */
     }
+    /* Logo image */
     #logo {
       width: 100%;
       height: auto;
       display: block;
     }
-    /* Text container */
+    /* Text container at bottom-right */
     #text-container {
       position: absolute;
       right: 5%;
       bottom: 5%;
       width: 300px;
       z-index: 2;
-      color: #fff;
+      color: #fff; /* Desktop: white text */
       padding: 15px;
       border-radius: 5px;
       font-family: sans-serif;
       line-height: 1.4;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.5); /* Desktop static background */
     }
     #text-container h2,
     #text-container p {
       margin: 0 0 10px 0;
+    }
+    /* Transition overlay is hidden on desktop */
+    #transition-overlay {
+      display: none;
     }
 
     /* ---------- MOBILE and TABLET adjustments (max-width: 1024px) ---------- */
@@ -67,20 +72,23 @@
         overflow: auto;
         height: auto;
       }
+      /* Use flexbox to order elements */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
       }
-      /* Hide video element on mobile */
+      /* Video becomes part of the document flow (at the bottom) */
       #background-video {
-        display: none;
-      }
-      /* Show canvas for mobile rendering */
-      #video-canvas {
-        display: block;
-        order: 4;
+        position: static;
+        transform: none;
         width: 100%;
+        height: auto;
+        min-width: 0;
+        min-height: 0;
+        object-fit: contain;
+        order: 4;
+        z-index: auto;
       }
       /* Logo container moves to the top */
       #logo-container {
@@ -90,35 +98,47 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves between logo and canvas */
+      /* Text container moves next with extra side padding */
       #text-container {
         position: static;
-        width: calc(100% - 40px);
+        width: calc(100% - 40px); /* 20px margin on left and right */
         order: 2;
         margin: 10px;
-        color: #000;
+        color: #000; /* Mobile: black text */
         padding: 20px;
-        text-align: center;
-        background-color: transparent;
+        text-align: center; /* Center-align heading & tagline */
+        background-color: transparent; /* Use body’s dynamic background */
+      }
+      /* Transition overlay placed between text and video */
+      #transition-overlay {
+        display: block;
+        order: 3;
+        width: calc(100% - 40px);
+        margin: 0 20px;
+        height: 100px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Video Background (visible on desktop, hidden on mobile) -->
-  <video id="background-video" autoplay loop muted playsinline crossOrigin="anonymous">
+  <!-- Video Background with crossOrigin attribute (if needed) -->
+  <video
+    id="background-video"
+    autoplay
+    loop
+    muted
+    playsinline
+    crossOrigin="anonymous"
+  >
     <source src="spider1.mp4" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
-  
-  <!-- Canvas for mobile rendering -->
-  <canvas id="video-canvas" style="display: none;"></canvas>
-  
+
   <!-- Logo Container -->
   <div id="logo-container">
     <img src="fixbot logo svg.svg" alt="Fixbot Logo" id="logo" />
   </div>
-  
+
   <!-- Text Container -->
   <div id="text-container">
     <h2>
@@ -135,77 +155,82 @@
     </p>
     <p><strong>Optimize. Automate. Illuminate.</strong></p>
   </div>
-  
+
+  <!-- Transition Overlay (mobile only) -->
+  <div id="transition-overlay"></div>
+
+  <!-- Hidden canvas for sampling video frames -->
+  <canvas id="video-canvas" style="display: none;"></canvas>
+
   <script>
     const video = document.getElementById('background-video');
     const canvas = document.getElementById('video-canvas');
     const ctx = canvas.getContext('2d');
+    const logoContainer = document.getElementById('logo-container');
+    const textContainer = document.getElementById('text-container');
+    const transitionOverlay = document.getElementById('transition-overlay');
 
-    function updateCanvas() {
-      // Run only on mobile (width <= 1024) and if video is playing
-      if (window.innerWidth > 1024 || video.paused || video.ended) {
-        requestAnimationFrame(updateCanvas);
-        return;
-      }
-      
-      // Set canvas dimensions based on video dimensions while preserving aspect ratio
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
-      if (!videoWidth || !videoHeight) {
-        requestAnimationFrame(updateCanvas);
-        return;
-      }
-      
-      const canvasWidth = canvas.clientWidth || window.innerWidth;
-      const canvasHeight = canvasWidth * (videoHeight / videoWidth);
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      
-      // Draw the current video frame onto the canvas
-      ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-      
-      // Create an offscreen canvas to sample the top 5 rows
-      const samplingCanvas = document.createElement('canvas');
-      const samplingCtx = samplingCanvas.getContext('2d');
+    function updateColor() {
+      if (video.paused || video.ended) return;
+
+      // Use a small canvas for performance
       const sampleWidth = 160;
-      const fullSampleHeight = 90;
-      const rowsToSample = 5;
-      samplingCanvas.width = sampleWidth;
-      samplingCanvas.height = fullSampleHeight;
-      samplingCtx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
-      
-      // Get image data for the top 5 rows only
-      const frame = samplingCtx.getImageData(0, 0, sampleWidth, rowsToSample);
-      const data = frame.data;
-      let r = 0, g = 0, b = 0;
-      const count = data.length / 4;
-      for (let i = 0; i < data.length; i += 4) {
-        r += data[i];
-        g += data[i + 1];
-        b += data[i + 2];
+      const fullSampleHeight = 90; // height to draw full frame (for consistency)
+      const rowsToSample = 5; // sample only top 5 rows
+
+      canvas.width = sampleWidth;
+      canvas.height = fullSampleHeight;
+
+      try {
+        ctx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
+      } catch (error) {
+        console.error("Error drawing video frame:", error);
+        return;
       }
-      r = Math.floor(r / count);
-      g = Math.floor(g / count);
-      b = Math.floor(b / count);
-      const avgColor = `rgb(${r}, ${g}, ${b})`;
-      
-      // Update body background to match the sampled average color
-      document.body.style.transition = 'background-color 0.5s ease';
-      document.body.style.backgroundColor = avgColor;
-      
-      requestAnimationFrame(updateCanvas);
+
+      try {
+        // Get image data for only the top 5 rows
+        const frame = ctx.getImageData(0, 0, sampleWidth, rowsToSample);
+        const data = frame.data;
+        let r = 0, g = 0, b = 0;
+        const count = data.length / 4;
+        for (let i = 0; i < data.length; i += 4) {
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+        }
+        r = Math.floor(r / count);
+        g = Math.floor(g / count);
+        b = Math.floor(b / count);
+        const avgColor = `rgb(${r}, ${g}, ${b})`;
+
+        if (window.innerWidth <= 1024) {
+          // On mobile: update the body background with the dynamic color.
+          document.body.style.transition = 'background-color 0.5s ease';
+          document.body.style.backgroundColor = avgColor;
+          // Ensure logo and text containers remain transparent.
+          logoContainer.style.transition = 'background-color 0.5s ease';
+          textContainer.style.transition = 'background-color 0.5s ease';
+          logoContainer.style.backgroundColor = 'transparent';
+          textContainer.style.backgroundColor = 'transparent';
+          // Update the gradient for the transition overlay.
+          transitionOverlay.style.transition = 'background-image 0.5s ease';
+          // Create a gradient from the avgColor to transparent over the 100px height.
+          transitionOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, transparent 100%)`;
+        } else {
+          // On desktop: use original static backgrounds.
+          document.body.style.backgroundColor = '#000';
+          logoContainer.style.backgroundColor = 'transparent';
+          textContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        }
+      } catch (error) {
+        console.error("Error processing image data:", error);
+      }
+      requestAnimationFrame(updateColor);
     }
 
     video.addEventListener('play', () => {
-      if (window.innerWidth <= 1024) {
-        requestAnimationFrame(updateCanvas);
-      }
-    });
-    
-    window.addEventListener('resize', () => {
-      if (window.innerWidth <= 1024 && !video.paused) {
-        requestAnimationFrame(updateCanvas);
-      }
+      requestAnimationFrame(updateColor);
     });
   </script>
 </body>
