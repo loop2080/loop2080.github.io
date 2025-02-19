@@ -12,7 +12,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden; /* Prevent scrolling on desktop */
-      background-color: #000; /* fallback */
+      background-color: #000; /* Fallback background */
     }
 
     /* Full-screen video for desktop */
@@ -36,7 +36,7 @@
       left: 5%;
       width: 480px;
       z-index: 1;
-      /* Background will be updated dynamically */
+      /* Dynamic background will be applied here */
     }
 
     /* Logo image styling */
@@ -58,7 +58,7 @@
       border-radius: 5px;
       font-family: sans-serif;
       line-height: 1.4;
-      /* Background will be updated dynamically */
+      /* Dynamic background will be applied here */
     }
     #text-container h2,
     #text-container p {
@@ -71,12 +71,12 @@
         overflow: auto;
         height: auto;
       }
-      /* On mobile, we want the entire background behind the content to change */
+      /* On mobile, the body background will be visible behind the content */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
-        background-color: transparent; /* will be updated dynamically */
+        /* Do not set a fixed background here so JS can update it */
       }
       /* Video becomes part of the content flow and appears last */
       #background-video {
@@ -90,22 +90,20 @@
         order: 3;
         z-index: auto;
       }
-      /* Logo container: remains at the top and spans full width */
+      /* Logo container appears at the top */
       #logo-container {
         position: static;
         width: 100%;
         max-width: 480px;
         order: 1;
         margin: 0;
-        background: transparent;
       }
-      /* Text container: appears between the logo and video */
+      /* Text container appears between the logo and video */
       #text-container {
         position: static;
         width: 100%;
         order: 2;
         margin: 0;
-        background: transparent;
       }
     }
   </style>
@@ -157,7 +155,6 @@
     const logoContainer = document.getElementById('logo-container');
     const textContainer = document.getElementById('text-container');
 
-    // Update the average color from the current video frame
     function updateColor() {
       if (video.paused || video.ended) return;
 
@@ -190,20 +187,18 @@
         b = Math.floor(b / count);
         const avgColor = `rgb(${r}, ${g}, ${b})`;
 
-        // Update the background of the logo and text containers
+        // Update the background colors with a smooth transition.
         logoContainer.style.transition = 'background-color 0.5s ease';
         textContainer.style.transition = 'background-color 0.5s ease';
+        document.body.style.transition = 'background-color 0.5s ease';
+
         logoContainer.style.backgroundColor = avgColor;
         textContainer.style.backgroundColor = avgColor;
-
-        // On mobile/tablet, also update the body background so no white gaps appear.
-        if (window.innerWidth <= 1024) {
-          document.body.style.transition = 'background-color 0.5s ease';
-          document.body.style.backgroundColor = avgColor;
-        }
+        document.body.style.backgroundColor = avgColor;
       } catch (error) {
         console.error("Error processing image data:", error);
       }
+
       requestAnimationFrame(updateColor);
     }
 
