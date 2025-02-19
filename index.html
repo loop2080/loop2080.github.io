@@ -5,17 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Responsive Video Layout with Dynamic Background</title>
   <style>
-    /* Base styles for desktop (full-screen video background) */
+    /* ---------- DESKTOP (Full-screen video background) ---------- */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden; /* Prevent scrolling on desktop */
-      background-color: #000; /* Fallback background */
+      overflow: hidden;
+      background-color: #000; /* fallback */
     }
-
-    /* Full-screen video for desktop */
+    /* Full-screen video */
     #background-video {
       position: absolute;
       top: 50%;
@@ -28,57 +27,56 @@
       object-fit: cover;
       z-index: 0;
     }
-
-    /* Logo container positioned at the top-left on desktop */
+    /* Logo container at top-left */
     #logo-container {
       position: absolute;
       top: 0;
       left: 5%;
       width: 480px;
       z-index: 1;
-      /* Dynamic background will be applied here */
+      /* Desktop static background: transparent */
+      background-color: transparent;
     }
-
-    /* Logo image styling */
+    /* Logo image */
     #logo {
       width: 100%;
       height: auto;
       display: block;
     }
-
-    /* Text container positioned at the bottom-right on desktop */
+    /* Text container at bottom-right */
     #text-container {
       position: absolute;
       right: 5%;
       bottom: 5%;
       width: 300px;
       z-index: 2;
-      color: #fff;
+      /* Text is black now */
+      color: #000;
       padding: 15px;
       border-radius: 5px;
       font-family: sans-serif;
       line-height: 1.4;
-      /* Dynamic background will be applied here */
+      /* Desktop static background as in the first version */
+      background-color: rgba(0, 0, 0, 0.5);
     }
     #text-container h2,
     #text-container p {
       margin: 0 0 10px 0;
     }
 
-    /* Mobile and tablet layout adjustments */
+    /* ---------- MOBILE and TABLET adjustments (max-width: 1024px) ---------- */
     @media (max-width: 1024px) {
       html, body {
         overflow: auto;
         height: auto;
       }
-      /* On mobile, the body background will be visible behind the content */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* Do not set a fixed background here so JS can update it */
+        /* In mobile, the dynamic background will cover the whole body */
       }
-      /* Video becomes part of the content flow and appears last */
+      /* Video becomes part of the normal document flow */
       #background-video {
         position: static;
         transform: none;
@@ -90,20 +88,22 @@
         order: 3;
         z-index: auto;
       }
-      /* Logo container appears at the top */
+      /* Logo container moves to the top */
       #logo-container {
         position: static;
         width: 100%;
         max-width: 480px;
         order: 1;
-        margin: 0;
+        margin: 10px auto;
       }
-      /* Text container appears between the logo and video */
+      /* Text container between logo and video with side spacing */
       #text-container {
         position: static;
-        width: 100%;
+        width: calc(100% - 20px); /* 10px margin on left and right */
         order: 2;
-        margin: 0;
+        margin: 10px;
+        /* For mobile, dynamic background is applied to the body */
+        background-color: transparent;
       }
     }
   </style>
@@ -122,17 +122,14 @@
     Your browser does not support the video tag.
   </video>
 
-  <!-- Logo Container (for dynamic background) -->
+  <!-- Logo Container -->
   <div id="logo-container">
-    <!-- SVG Logo -->
     <img src="fixbot logo svg.svg" alt="Fixbot Logo" id="logo" />
   </div>
 
-  <!-- Text Container (for dynamic background) -->
+  <!-- Text Container -->
   <div id="text-container">
-    <h2>
-      <strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong>
-    </h2>
+    <h2><strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong></h2>
     <p>
       <strong>Fixbot</strong> is transforming the way lighting pole maintenance companies operate.
       Using <strong>cutting-edge AI</strong> and <strong>advanced robotics</strong>, we help businesses
@@ -158,8 +155,8 @@
     function updateColor() {
       if (video.paused || video.ended) return;
 
-      const sampleWidth = 160;
-      const sampleHeight = 90;
+      // Sample a small portion for performance
+      const sampleWidth = 160, sampleHeight = 90;
       canvas.width = sampleWidth;
       canvas.height = sampleHeight;
 
@@ -175,30 +172,34 @@
         const data = frame.data;
         let r = 0, g = 0, b = 0;
         const count = data.length / 4;
-
         for (let i = 0; i < data.length; i += 4) {
           r += data[i];
           g += data[i + 1];
           b += data[i + 2];
         }
-
         r = Math.floor(r / count);
         g = Math.floor(g / count);
         b = Math.floor(b / count);
         const avgColor = `rgb(${r}, ${g}, ${b})`;
 
-        // Update the background colors with a smooth transition.
-        logoContainer.style.transition = 'background-color 0.5s ease';
-        textContainer.style.transition = 'background-color 0.5s ease';
-        document.body.style.transition = 'background-color 0.5s ease';
-
-        logoContainer.style.backgroundColor = avgColor;
-        textContainer.style.backgroundColor = avgColor;
-        document.body.style.backgroundColor = avgColor;
+        // For mobile/tablet: apply dynamic background to the body.
+        if (window.innerWidth <= 1024) {
+          document.body.style.transition = 'background-color 0.5s ease';
+          document.body.style.backgroundColor = avgColor;
+          // On mobile, logo and text containers remain transparent.
+          logoContainer.style.transition = 'background-color 0.5s ease';
+          textContainer.style.transition = 'background-color 0.5s ease';
+          logoContainer.style.backgroundColor = 'transparent';
+          textContainer.style.backgroundColor = 'transparent';
+        } else {
+          // For desktop: revert to the original (static) backgrounds.
+          document.body.style.backgroundColor = '#000';
+          logoContainer.style.backgroundColor = 'transparent';
+          textContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        }
       } catch (error) {
         console.error("Error processing image data:", error);
       }
-
       requestAnimationFrame(updateColor);
     }
 
