@@ -1,10 +1,10 @@
-// Koala, Tiger, Dolphin
+// Koala, Panda, Iguana
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Responsive Video Layout with Smooth Transition</title>
+  <title>Responsive Video Layout without Transition Overlay</title>
   <style>
     /* ---------- DESKTOP (Full-screen video background) ---------- */
     html, body {
@@ -28,11 +28,7 @@
       object-fit: cover;
       z-index: 0;
     }
-    /* Transition overlay (desktop: hidden) */
-    #transition-overlay {
-      display: none;
-    }
-    /* Logo container at top-left */
+    /* Logo container */
     #logo-container {
       position: absolute;
       top: 0;
@@ -46,7 +42,7 @@
       height: auto;
       display: block;
     }
-    /* Text container at bottom-right */
+    /* Text container */
     #text-container {
       position: absolute;
       right: 5%;
@@ -76,26 +72,15 @@
         flex-direction: column;
         align-items: center;
       }
-      /* Use the video element in the document flow */
+      /* Hide video element on mobile */
       #background-video {
-        position: static;
-        transform: none;
-        width: 100%;
-        height: auto;
-        object-fit: contain;
-        order: 4;
-        z-index: auto;
+        display: none;
       }
-      /* Transition overlay placed between text and video */
-      #transition-overlay {
+      /* Show canvas for mobile rendering */
+      #video-canvas {
         display: block;
-        order: 3;
-        width: calc(100% - 40px);
-        margin: 0 20px;
-        height: 100px; /* Transition area height */
-        pointer-events: none;
-        z-index: 1;
-        position: static; /* Ensure it flows between text and video */
+        order: 4;
+        width: 100%;
       }
       /* Logo container moves to the top */
       #logo-container {
@@ -105,7 +90,7 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves next with extra side padding */
+      /* Text container moves between logo and canvas */
       #text-container {
         position: static;
         width: calc(100% - 40px);
@@ -120,23 +105,25 @@
   </style>
 </head>
 <body>
-  <!-- Video Background -->
+  <!-- Video Background (visible on desktop, hidden on mobile) -->
   <video id="background-video" autoplay loop muted playsinline crossOrigin="anonymous">
     <source src="spider1.mp4" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
-
-  <!-- Transition Overlay (Mobile only) -->
-  <div id="transition-overlay"></div>
-
+  
+  <!-- Canvas for mobile rendering -->
+  <canvas id="video-canvas" style="display: none;"></canvas>
+  
   <!-- Logo Container -->
   <div id="logo-container">
     <img src="fixbot logo svg.svg" alt="Fixbot Logo" id="logo" />
   </div>
-
+  
   <!-- Text Container -->
   <div id="text-container">
-    <h2><strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong></h2>
+    <h2>
+      <strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong>
+    </h2>
     <p>
       <strong>Fixbot</strong> is transforming the way lighting pole maintenance companies operate.
       Using <strong>cutting-edge AI</strong> and <strong>advanced robotics</strong>, we help businesses
@@ -148,79 +135,76 @@
     </p>
     <p><strong>Optimize. Automate. Illuminate.</strong></p>
   </div>
-
-  <!-- Hidden canvas for sampling video frames -->
-  <canvas id="video-canvas" style="display: none;"></canvas>
-
+  
   <script>
     const video = document.getElementById('background-video');
     const canvas = document.getElementById('video-canvas');
     const ctx = canvas.getContext('2d');
-    const transitionOverlay = document.getElementById('transition-overlay');
 
-    function updateTransition() {
-      if (video.paused || video.ended) {
-        requestAnimationFrame(updateTransition);
+    function updateCanvas() {
+      // Run only on mobile (width <= 1024) and if video is playing
+      if (window.innerWidth > 1024 || video.paused || video.ended) {
+        requestAnimationFrame(updateCanvas);
         return;
       }
-      // Use a small canvas for performance
+      
+      // Set canvas dimensions based on video dimensions while preserving aspect ratio
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      if (!videoWidth || !videoHeight) {
+        requestAnimationFrame(updateCanvas);
+        return;
+      }
+      
+      const canvasWidth = canvas.clientWidth || window.innerWidth;
+      const canvasHeight = canvasWidth * (videoHeight / videoWidth);
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      
+      // Draw the current video frame onto the canvas
+      ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+      
+      // Create an offscreen canvas to sample the top 5 rows
+      const samplingCanvas = document.createElement('canvas');
+      const samplingCtx = samplingCanvas.getContext('2d');
       const sampleWidth = 160;
-      const fullSampleHeight = 90; // fixed sampling height
-      const rowsToSample = 5; // sample only the top 5 rows
-
-      canvas.width = sampleWidth;
-      canvas.height = fullSampleHeight;
+      const fullSampleHeight = 90;
+      const rowsToSample = 5;
+      samplingCanvas.width = sampleWidth;
+      samplingCanvas.height = fullSampleHeight;
+      samplingCtx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
       
-      try {
-        ctx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
-      } catch (error) {
-        console.error("Error drawing video frame:", error);
-        requestAnimationFrame(updateTransition);
-        return;
+      // Get image data for the top 5 rows only
+      const frame = samplingCtx.getImageData(0, 0, sampleWidth, rowsToSample);
+      const data = frame.data;
+      let r = 0, g = 0, b = 0;
+      const count = data.length / 4;
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i];
+        g += data[i + 1];
+        b += data[i + 2];
       }
+      r = Math.floor(r / count);
+      g = Math.floor(g / count);
+      b = Math.floor(b / count);
+      const avgColor = `rgb(${r}, ${g}, ${b})`;
       
-      try {
-        // Get image data for the top 5 rows only
-        const frame = ctx.getImageData(0, 0, sampleWidth, rowsToSample);
-        const data = frame.data;
-        let r = 0, g = 0, b = 0;
-        const count = data.length / 4;
-        for (let i = 0; i < data.length; i += 4) {
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
-        }
-        r = Math.floor(r / count);
-        g = Math.floor(g / count);
-        b = Math.floor(b / count);
-        const avgColor = `rgb(${r}, ${g}, ${b})`;
-
-        if (window.innerWidth <= 1024) {
-          // Update transition overlay gradient for mobile:
-          // Create a gradient that starts with avgColor (fully opaque) at the top,
-          // remains that color until 70% of the overlay height, then smoothly transitions to transparent.
-          transitionOverlay.style.transition = 'background-image 0.5s ease';
-          transitionOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, ${avgColor} 70%, transparent 100%)`;
-          // Also update the body background to match for a seamless effect.
-          document.body.style.transition = 'background-color 0.5s ease';
-          document.body.style.backgroundColor = avgColor;
-        } else {
-          document.body.style.backgroundColor = '#000';
-          transitionOverlay.style.backgroundImage = 'none';
-        }
-      } catch (error) {
-        console.error("Error processing image data:", error);
-      }
-      requestAnimationFrame(updateTransition);
+      // Update body background to match the sampled average color
+      document.body.style.transition = 'background-color 0.5s ease';
+      document.body.style.backgroundColor = avgColor;
+      
+      requestAnimationFrame(updateCanvas);
     }
-    
+
     video.addEventListener('play', () => {
-      requestAnimationFrame(updateTransition);
+      if (window.innerWidth <= 1024) {
+        requestAnimationFrame(updateCanvas);
+      }
     });
     
     window.addEventListener('resize', () => {
       if (window.innerWidth <= 1024 && !video.paused) {
-        requestAnimationFrame(updateTransition);
+        requestAnimationFrame(updateCanvas);
       }
     });
   </script>
