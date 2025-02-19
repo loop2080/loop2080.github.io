@@ -96,17 +96,17 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves between logo and video */
+      /* Text container moves between logo and video with extra side padding */
       #text-container {
         position: static;
-        width: calc(100% - 20px); /* maintain side margins */
+        width: calc(100% - 40px); /* Increased side padding: 20px each side */
         order: 2;
         margin: 10px;
         /* Mobile text color black */
         color: #000;
         /* Increase padding for extra space from left/right */
         padding: 20px;
-        /* Center align text within the container */
+        /* Center align text */
         text-align: center;
         /* For mobile, containers are transparent so the dynamic background shows */
         background-color: transparent;
@@ -163,22 +163,30 @@
     function updateColor() {
       if (video.paused || video.ended) return;
 
-      const sampleWidth = 160, sampleHeight = 90;
+      // Use a small canvas for performance
+      const sampleWidth = 160;
+      const fullSampleHeight = 90; // Full canvas height (for drawing)
+      const rowsToSample = 5; // Only sample the top 5 rows
+
       canvas.width = sampleWidth;
-      canvas.height = sampleHeight;
+      canvas.height = fullSampleHeight;
 
       try {
-        ctx.drawImage(video, 0, 0, sampleWidth, sampleHeight);
+        // Draw the full frame onto the canvas
+        ctx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
       } catch (error) {
         console.error("Error drawing video frame:", error);
         return;
       }
 
       try {
-        const frame = ctx.getImageData(0, 0, sampleWidth, sampleHeight);
+        // Get image data from the top 5 rows only
+        const frame = ctx.getImageData(0, 0, sampleWidth, rowsToSample);
         const data = frame.data;
         let r = 0, g = 0, b = 0;
         const count = data.length / 4;
+
+        // Sum up the color values for these pixels
         for (let i = 0; i < data.length; i += 4) {
           r += data[i];
           g += data[i + 1];
