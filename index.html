@@ -1,9 +1,10 @@
+// Koala, Panda, Iguana
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Responsive Video Layout with Dynamic Background</title>
+  <title>Responsive Video Layout with Dynamic Transition</title>
   <style>
     /* ---------- DESKTOP (Full-screen video background) ---------- */
     html, body {
@@ -14,18 +15,28 @@
       overflow: hidden;
       background-color: #000; /* fallback background */
     }
-    /* Full-screen video */
-    #background-video {
+    /* Video container for desktop */
+    #video-container {
       position: absolute;
       top: 50%;
       left: 50%;
-      min-width: 100%;
-      min-height: 100%;
       width: auto;
       height: auto;
+      min-width: 100%;
+      min-height: 100%;
       transform: translate(-50%, -50%);
-      object-fit: cover;
       z-index: 0;
+    }
+    /* Video element styling */
+    #background-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Video overlay (transition effect) - hidden on desktop */
+    #video-overlay {
+      display: none;
     }
     /* Logo container at top-left */
     #logo-container {
@@ -60,10 +71,6 @@
     #text-container p {
       margin: 0 0 10px 0;
     }
-    /* Transition overlay is hidden on desktop */
-    #transition-overlay {
-      display: none;
-    }
 
     /* ---------- MOBILE and TABLET adjustments (max-width: 1024px) ---------- */
     @media (max-width: 1024px) {
@@ -71,23 +78,33 @@
         overflow: auto;
         height: auto;
       }
-      /* Use flexbox to order elements */
+      /* Mobile body layout */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
       }
-      /* Video becomes part of the document flow (at the bottom) */
-      #background-video {
+      /* Video container in mobile becomes static and takes full width */
+      #video-container {
         position: static;
         transform: none;
         width: 100%;
         height: auto;
         min-width: 0;
         min-height: 0;
-        object-fit: contain;
         order: 4;
         z-index: auto;
+      }
+      /* Show the video overlay in mobile for the transition effect */
+      #video-overlay {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100px; /* Transition over 100px */
+        pointer-events: none;
+        z-index: 1;
       }
       /* Logo container moves to the top */
       #logo-container {
@@ -97,41 +114,38 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves next with extra side padding */
+      /* Text container moves between logo and video with extra side padding */
       #text-container {
         position: static;
-        width: calc(100% - 40px); /* 20px margin on left and right */
+        width: calc(100% - 40px); /* 20px margin on each side */
         order: 2;
         margin: 10px;
         color: #000; /* Mobile: black text */
         padding: 20px;
-        text-align: center; /* Center-align heading & tagline */
+        text-align: center;
         background-color: transparent; /* Use body’s dynamic background */
-      }
-      /* Transition overlay placed between text and video */
-      #transition-overlay {
-        display: block;
-        order: 3;
-        width: calc(100% - 40px);
-        margin: 0 20px;
-        height: 100px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Video Background with crossOrigin attribute (if needed) -->
-  <video
-    id="background-video"
-    autoplay
-    loop
-    muted
-    playsinline
-    crossOrigin="anonymous"
-  >
-    <source src="spider1.mp4" type="video/mp4" />
-    Your browser does not support the video tag.
-  </video>
+  <!-- Video container wrapping the video and its overlay -->
+  <div id="video-container">
+    <!-- Video Background with crossOrigin attribute (if needed) -->
+    <video
+      id="background-video"
+      autoplay
+      loop
+      muted
+      playsinline
+      crossOrigin="anonymous"
+    >
+      <source src="spider1.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+    <!-- Video overlay for mobile transition effect -->
+    <div id="video-overlay"></div>
+  </div>
 
   <!-- Logo Container -->
   <div id="logo-container">
@@ -155,9 +169,6 @@
     <p><strong>Optimize. Automate. Illuminate.</strong></p>
   </div>
 
-  <!-- Transition Overlay (mobile only) -->
-  <div id="transition-overlay"></div>
-
   <!-- Hidden canvas for sampling video frames -->
   <canvas id="video-canvas" style="display: none;"></canvas>
 
@@ -167,15 +178,15 @@
     const ctx = canvas.getContext('2d');
     const logoContainer = document.getElementById('logo-container');
     const textContainer = document.getElementById('text-container');
-    const transitionOverlay = document.getElementById('transition-overlay');
+    const videoOverlay = document.getElementById('video-overlay');
 
     function updateColor() {
       if (video.paused || video.ended) return;
 
       // Use a small canvas for performance
       const sampleWidth = 160;
-      const fullSampleHeight = 90; // height to draw full frame (for consistency)
-      const rowsToSample = 5; // sample only top 5 rows
+      const fullSampleHeight = 90; // draw full frame for consistency
+      const rowsToSample = 5; // only sample the top 5 rows
 
       canvas.width = sampleWidth;
       canvas.height = fullSampleHeight;
@@ -188,7 +199,7 @@
       }
 
       try {
-        // Get image data for only the top 5 rows
+        // Get image data from the top 5 rows only
         const frame = ctx.getImageData(0, 0, sampleWidth, rowsToSample);
         const data = frame.data;
         let r = 0, g = 0, b = 0;
@@ -212,15 +223,15 @@
           textContainer.style.transition = 'background-color 0.5s ease';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'transparent';
-          // Update the gradient for the transition overlay.
-          transitionOverlay.style.transition = 'background-image 0.5s ease';
-          // Create a gradient from the avgColor to transparent over the 100px height.
-          transitionOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, transparent 100%)`;
+          // Update the video overlay gradient to blend over 100px.
+          videoOverlay.style.transition = 'background-image 0.5s ease';
+          videoOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, transparent 100%)`;
         } else {
           // On desktop: use original static backgrounds.
           document.body.style.backgroundColor = '#000';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
+          videoOverlay.style.backgroundImage = 'none';
         }
       } catch (error) {
         console.error("Error processing image data:", error);
