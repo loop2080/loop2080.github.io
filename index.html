@@ -96,14 +96,18 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves between logo and video with side spacing */
+      /* Text container moves between logo and video */
       #text-container {
         position: static;
-        width: calc(100% - 20px); /* 10px margin on left and right */
+        width: calc(100% - 20px); /* maintain side margins */
         order: 2;
         margin: 10px;
         /* Mobile text color black */
         color: #000;
+        /* Increase padding for extra space from left/right */
+        padding: 20px;
+        /* Center align text within the container */
+        text-align: center;
         /* For mobile, containers are transparent so the dynamic background shows */
         background-color: transparent;
       }
