@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- This is a repost of bfd9060 -->
+<!-- This is a repost of 6c7c9 -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,7 +13,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #000; /* fallback */
+      background-color: #000; /* fallback background */
     }
     /* Full-screen video */
     #background-video {
@@ -51,13 +51,13 @@
       bottom: 5%;
       width: 300px;
       z-index: 2;
-      /* Text is black now */
-      color: #000;
+      /* Desktop text color white */
+      color: #fff;
       padding: 15px;
       border-radius: 5px;
       font-family: sans-serif;
       line-height: 1.4;
-      /* Desktop static background as in the first version */
+      /* Desktop static background as in the original version */
       background-color: rgba(0, 0, 0, 0.5);
     }
     #text-container h2,
@@ -71,11 +71,11 @@
         overflow: auto;
         height: auto;
       }
+      /* On mobile, the body background will be dynamically updated */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* In mobile, the dynamic background will cover the whole body */
       }
       /* Video becomes part of the normal document flow */
       #background-video {
@@ -97,13 +97,19 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container between logo and video with side spacing */
+      /* Text container moves between logo and video */
       #text-container {
         position: static;
-        width: calc(100% - 20px); /* 10px margin on left and right */
+        width: calc(100% - 20px); /* maintain side margins */
         order: 2;
         margin: 10px;
-        /* For mobile, dynamic background is applied to the body */
+        /* Mobile text color black */
+        color: #000;
+        /* Increase padding for extra space from left/right */
+        padding: 20px;
+        /* Center align text within the container */
+        text-align: center;
+        /* For mobile, containers are transparent so the dynamic background shows */
         background-color: transparent;
       }
     }
@@ -130,7 +136,9 @@
 
   <!-- Text Container -->
   <div id="text-container">
-    <h2><strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong></h2>
+    <h2>
+      <strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong>
+    </h2>
     <p>
       <strong>Fixbot</strong> is transforming the way lighting pole maintenance companies operate.
       Using <strong>cutting-edge AI</strong> and <strong>advanced robotics</strong>, we help businesses
@@ -156,7 +164,6 @@
     function updateColor() {
       if (video.paused || video.ended) return;
 
-      // Sample a small portion for performance
       const sampleWidth = 160, sampleHeight = 90;
       canvas.width = sampleWidth;
       canvas.height = sampleHeight;
@@ -183,17 +190,17 @@
         b = Math.floor(b / count);
         const avgColor = `rgb(${r}, ${g}, ${b})`;
 
-        // For mobile/tablet: apply dynamic background to the body.
         if (window.innerWidth <= 1024) {
+          // On mobile, update the body background with the dynamic color.
           document.body.style.transition = 'background-color 0.5s ease';
           document.body.style.backgroundColor = avgColor;
-          // On mobile, logo and text containers remain transparent.
+          // Keep the containers transparent.
           logoContainer.style.transition = 'background-color 0.5s ease';
           textContainer.style.transition = 'background-color 0.5s ease';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'transparent';
         } else {
-          // For desktop: revert to the original (static) backgrounds.
+          // On desktop, use the original static backgrounds.
           document.body.style.backgroundColor = '#000';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
