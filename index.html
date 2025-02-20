@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- revert due to failure  -->
 <html lang="en">
+<!-- This is a repost of bfd9060 -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,7 +13,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #000; /* fallback background */
+      background-color: #000; /* fallback */
     }
     /* Full-screen video */
     #background-video {
@@ -35,7 +35,8 @@
       left: 5%;
       width: 480px;
       z-index: 1;
-      background-color: transparent; /* Desktop: transparent */
+      /* Desktop static background: transparent */
+      background-color: transparent;
     }
     /* Logo image */
     #logo {
@@ -50,20 +51,18 @@
       bottom: 5%;
       width: 300px;
       z-index: 2;
-      color: #fff; /* Desktop: white text */
+      /* Text is black now */
+      color: #000;
       padding: 15px;
       border-radius: 5px;
       font-family: sans-serif;
       line-height: 1.4;
-      background-color: rgba(0, 0, 0, 0.5); /* Desktop static background */
+      /* Desktop static background as in the first version */
+      background-color: rgba(0, 0, 0, 0.5);
     }
     #text-container h2,
     #text-container p {
       margin: 0 0 10px 0;
-    }
-    /* Transition overlay is hidden on desktop */
-    #transition-overlay {
-      display: none;
     }
 
     /* ---------- MOBILE and TABLET adjustments (max-width: 1024px) ---------- */
@@ -72,13 +71,13 @@
         overflow: auto;
         height: auto;
       }
-      /* Use flexbox to order elements */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
+        /* In mobile, the dynamic background will cover the whole body */
       }
-      /* Video becomes part of the document flow (at the bottom) */
+      /* Video becomes part of the normal document flow */
       #background-video {
         position: static;
         transform: none;
@@ -87,7 +86,7 @@
         min-width: 0;
         min-height: 0;
         object-fit: contain;
-        order: 4;
+        order: 3;
         z-index: auto;
       }
       /* Logo container moves to the top */
@@ -98,24 +97,14 @@
         order: 1;
         margin: 10px auto;
       }
-      /* Text container moves next with extra side padding */
+      /* Text container between logo and video with side spacing */
       #text-container {
         position: static;
-        width: calc(100% - 40px); /* 20px margin on left and right */
+        width: calc(100% - 20px); /* 10px margin on left and right */
         order: 2;
         margin: 10px;
-        color: #000; /* Mobile: black text */
-        padding: 20px;
-        text-align: center; /* Center-align heading & tagline */
-        background-color: transparent; /* Use body’s dynamic background */
-      }
-      /* Transition overlay placed between text and video */
-      #transition-overlay {
-        display: block;
-        order: 3;
-        width: calc(100% - 40px);
-        margin: 0 20px;
-        height: 100px;
+        /* For mobile, dynamic background is applied to the body */
+        background-color: transparent;
       }
     }
   </style>
@@ -141,9 +130,7 @@
 
   <!-- Text Container -->
   <div id="text-container">
-    <h2>
-      <strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong>
-    </h2>
+    <h2><strong>Revolutionizing Lighting Pole Maintenance with AI & Robotics</strong></h2>
     <p>
       <strong>Fixbot</strong> is transforming the way lighting pole maintenance companies operate.
       Using <strong>cutting-edge AI</strong> and <strong>advanced robotics</strong>, we help businesses
@@ -156,9 +143,6 @@
     <p><strong>Optimize. Automate. Illuminate.</strong></p>
   </div>
 
-  <!-- Transition Overlay (mobile only) -->
-  <div id="transition-overlay"></div>
-
   <!-- Hidden canvas for sampling video frames -->
   <canvas id="video-canvas" style="display: none;"></canvas>
 
@@ -168,29 +152,24 @@
     const ctx = canvas.getContext('2d');
     const logoContainer = document.getElementById('logo-container');
     const textContainer = document.getElementById('text-container');
-    const transitionOverlay = document.getElementById('transition-overlay');
 
     function updateColor() {
       if (video.paused || video.ended) return;
 
-      // Use a small canvas for performance
-      const sampleWidth = 160;
-      const fullSampleHeight = 90; // height to draw full frame (for consistency)
-      const rowsToSample = 5; // sample only top 5 rows
-
+      // Sample a small portion for performance
+      const sampleWidth = 160, sampleHeight = 90;
       canvas.width = sampleWidth;
-      canvas.height = fullSampleHeight;
+      canvas.height = sampleHeight;
 
       try {
-        ctx.drawImage(video, 0, 0, sampleWidth, fullSampleHeight);
+        ctx.drawImage(video, 0, 0, sampleWidth, sampleHeight);
       } catch (error) {
         console.error("Error drawing video frame:", error);
         return;
       }
 
       try {
-        // Get image data for only the top 5 rows
-        const frame = ctx.getImageData(0, 0, sampleWidth, rowsToSample);
+        const frame = ctx.getImageData(0, 0, sampleWidth, sampleHeight);
         const data = frame.data;
         let r = 0, g = 0, b = 0;
         const count = data.length / 4;
@@ -204,21 +183,17 @@
         b = Math.floor(b / count);
         const avgColor = `rgb(${r}, ${g}, ${b})`;
 
+        // For mobile/tablet: apply dynamic background to the body.
         if (window.innerWidth <= 1024) {
-          // On mobile: update the body background with the dynamic color.
           document.body.style.transition = 'background-color 0.5s ease';
           document.body.style.backgroundColor = avgColor;
-          // Ensure logo and text containers remain transparent.
+          // On mobile, logo and text containers remain transparent.
           logoContainer.style.transition = 'background-color 0.5s ease';
           textContainer.style.transition = 'background-color 0.5s ease';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'transparent';
-          // Update the gradient for the transition overlay.
-          transitionOverlay.style.transition = 'background-image 0.5s ease';
-          // Create a gradient from the avgColor to transparent over the 100px height.
-          transitionOverlay.style.backgroundImage = `linear-gradient(to bottom, ${avgColor} 0%, transparent 100%)`;
         } else {
-          // On desktop: use original static backgrounds.
+          // For desktop: revert to the original (static) backgrounds.
           document.body.style.backgroundColor = '#000';
           logoContainer.style.backgroundColor = 'transparent';
           textContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
